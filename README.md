@@ -124,12 +124,6 @@ You can now list the running pods with the `kubectl` command:
 kubectl get pods --all-namespaces
 ```
 
-## Powershell spesific problems
-
-Var file usage for test.
-
-terraform plan -var-file="env/test.tfvars"
-
 ## After First Apply
 
 There are a few things you have to do manually after the first apply:
@@ -144,3 +138,4 @@ kubectl describe ingress [ingress-name]
 
 https://www.terraform.io/intro/index.html
 https://learn.hashicorp.com/tutorials/terraform/gke?in=terraform/kubernetes
+https://github.com/hashicorp/learn-terraform-provision-gke-cluster
