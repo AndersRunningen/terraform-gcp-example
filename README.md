@@ -141,3 +141,6 @@ There are a few things you have to do manually after the first apply:
 ```bash
 kubectl describe ingress [ingress-name]
 ```
+
+https://www.terraform.io/intro/index.html
+https://learn.hashicorp.com/tutorials/terraform/gke?in=terraform/kubernetes
