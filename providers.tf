@@ -1,6 +1,5 @@
 terraform {
   required_providers {
-    azurerm     = "~> 2"
     google      = "~> 3"
     google-beta = "~> 3"
   }
