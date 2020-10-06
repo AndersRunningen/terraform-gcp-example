@@ -115,7 +115,7 @@ Run the following command in order to fetch the credentials for the new
 Kubernetes cluster:
 
 ```bash
-gcloud container clusters get-credentials cluster --zone europe-north1-a
+gcloud container clusters get-credentials andersrunningen-test-gke --zone europe-west1-b
 ```
 
 You can now list the running pods with the `kubectl` command:
