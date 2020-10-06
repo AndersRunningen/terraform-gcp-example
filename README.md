@@ -38,7 +38,7 @@ Set the following configurations:
 
 ```bash
 gcloud config set account <my_user_account>
-gcloud config set project andersrunningen-Test
+gcloud config set project andersrunningen-test
 gcloud config set compute/region europe-north1
 ```
 
@@ -53,8 +53,8 @@ gcloud iam service-accounts create terraform
 Grant the new Service Account owner permissions:
 
 ```bash
-gcloud projects add-iam-policy-binding andersrunningen-Test \
-  --member serviceAccount:terraform@andersrunningen-Test.iam.gserviceaccount.com \
+gcloud projects add-iam-policy-binding andersrunningen-test \
+  --member serviceAccount:terraform@andersrunningen-test.iam.gserviceaccount.com \
   --role roles/owner
 ```
 
@@ -62,8 +62,8 @@ Create a credential for the Service Account by running the following command:
 
 ```bash
 gcloud iam service-accounts keys create \
-  --iam-account terraform@andersrunningen-Test.iam.gserviceaccount.com \
-  andersrunningen-Test.json
+  --iam-account terraform@andersrunningen-test.iam.gserviceaccount.com \
+  andersrunningen-test.json
 ```
 
 Move the `.json` file somewhere safe and set the following environment variables:
@@ -71,7 +71,7 @@ Move the `.json` file somewhere safe and set the following environment variables
 ```bash
 export GOOGLE_CREDENTIALS=$(cat ~/my/path.json | tr -d '\n')
 export TERRAFORM_ENVIRONMENT=test
-export TERRAFORM_STATE_GCP_BUCKET=andersrunningen-Test-tf-state
+export TERRAFORM_STATE_GCP_BUCKET=andersrunningen-test-tf-state
 ```
 
 Create an encryption key for encrypting the content of the Terraform State and
