@@ -11,4 +11,3 @@ resource "google_compute_subnetwork" "subnetwork" {
   region        = var.google_region
   network       = google_compute_network.network.self_link
 }
-
