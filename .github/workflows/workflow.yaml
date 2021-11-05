@@ -36,7 +36,7 @@ jobs:
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         TERRAFORM_STATE_GCP_BUCKET: ${{ secrets.TERRAFORM_STATE_GCP_BUCKET}}
-        TF_WORKSPACE: ${{ ENVIRONMENT}}
+        TF_WORKSPACE: ${{ env.ENVIRONMENT}}
 
     # Checks that all Terraform configuration files adhere to a canonical format
     - name: Terraform Format
@@ -44,7 +44,7 @@ jobs:
 
     # Generates an execution plan for Terraform
     - name: Terraform Plan
-      run: terraform plan -var-file=env/${{ENVIRONMENT}}.tfvars
+      run: terraform plan -var-file=env/${{ env.ENVIRONMENT}}.tfvars
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
 
