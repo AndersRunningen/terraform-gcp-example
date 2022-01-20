@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     google      = "~> 4.7.0"
-    google-beta = "~> 4.6.0"
+    google-beta = "~> 4.7.0"
   }
 }
 
