@@ -22,7 +22,6 @@ env:
   tfnotify_version: 0.7.4
   GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
   TERRAFORM_STATE_GCP_BUCKET: ${{ secrets.TERRAFORM_STATE_GCP_BUCKET }}
-  #GOOGLE_ENCRYPTION_KEY: ${{ secrets.GOOGLE_ENCRYPTION_KEY }}
 
 jobs:
   plan:
@@ -38,8 +37,8 @@ jobs:
     - id: 'auth'
       uses: 'google-github-actions/auth@v0'
       with:
-        workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }} # this is the output provider_name from the TF module
-        service_account: ${{ secrets.SA_EMAIL }} # this is a SA email configured using the TF module with access to YOUR-GCS-BUCKET
+        workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.SA_EMAIL }}
 
     - name: Setup tfnotify
       run: |
@@ -54,11 +53,10 @@ jobs:
 
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
-      run: terraform init -reconfigure -backend-config="bucket=${TERRAFORM_STATE_GCP_BUCKET}" #-backend-config="encryption_key=${GOOGLE_ENCRYPTION_KEY}"
+      run: terraform init -reconfigure -backend-config="bucket=${TERRAFORM_STATE_GCP_BUCKET}"
       env:
         GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
         TERRAFORM_STATE_GCP_BUCKET: ${{ secrets.TERRAFORM_STATE_GCP_BUCKET }}
-        #GOOGLE_ENCRYPTION_KEY: ${{ secrets.GOOGLE_ENCRYPTION_KEY }}
 
     # Validate that there are no errors
     - name: Terraform Validate
@@ -85,49 +83,54 @@ jobs:
       if: steps.plan.outcome == 'failure'
       run: exit 1
 
-# ##Apply job
-#   apply:
-#     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+##Apply job
+  apply:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
-#     runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-#     steps:
-#     # Checkout the repository to the GitHub Actions runner
-#     - name: Checkout
-#       uses: actions/checkout@v3
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
 
-#     - name: Setup tfnotify
-#       run: |
-#         sudo curl -fL -o tfnotify.tar.gz https://github.com/mercari/tfnotify/releases/download/v${{ env.tfnotify_version }}/tfnotify_linux_amd64.tar.gz
-#         sudo tar -C /usr/bin -xzf ./tfnotify.tar.gz
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.SA_EMAIL }}
 
-#     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
-#     - name: Setup Terraform
-#       uses: hashicorp/setup-terraform@v1
-#       with:
-#         terraform_version: ${{ env.terraform_version }}
+    - name: Setup tfnotify
+      run: |
+        sudo curl -fL -o tfnotify.tar.gz https://github.com/mercari/tfnotify/releases/download/v${{ env.tfnotify_version }}/tfnotify_linux_amd64.tar.gz
+        sudo tar -C /usr/bin -xzf ./tfnotify.tar.gz
 
-#     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
-#     - name: Terraform Init
-#       run: terraform init -reconfigure -backend-config="bucket=${TERRAFORM_STATE_GCP_BUCKET}" -backend-config="encryption_key=${GOOGLE_ENCRYPTION_KEY}"
-#       env:
-#         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-#         TERRAFORM_STATE_GCP_BUCKET: ${{ secrets.TERRAFORM_STATE_GCP_BUCKET }}
-#         GOOGLE_ENCRYPTION_KEY: ${{ secrets.GOOGLE_ENCRYPTION_KEY }}
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: ${{ env.terraform_version }}
 
-#     # Validate that there are no errors
-#     - name: Terraform Validate
-#       run: terraform validate -no-color
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init -reconfigure -backend-config="bucket=${TERRAFORM_STATE_GCP_BUCKET}"
+      env:
+        GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
+        TERRAFORM_STATE_GCP_BUCKET: ${{ secrets.TERRAFORM_STATE_GCP_BUCKET }}
 
-#     # Checks that all Terraform configuration files adhere to a canonical format
-#     - name: Terraform Format
-#       run: terraform fmt -check
+    # Validate that there are no errors
+    - name: Terraform Validate
+      run: terraform validate -no-color
 
-#     # https://sue445.hatenablog.com/entry/2021/01/07/004835
-#     # Generates an execution plan for Terraform
-#     - name: Terraform Plan
-#       run: terraform plan -no-color -lock-timeout=3000s -out=terraform.tfplan
+    # Checks that all Terraform configuration files adhere to a canonical format
+    - name: Terraform Format
+      run: terraform fmt -check
+
+    # https://sue445.hatenablog.com/entry/2021/01/07/004835
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      run: terraform plan -no-color -lock-timeout=3000s -out=terraform.tfplan
 
 
-#     - name: Terraform Apply
-#       run: terraform apply -auto-approve -lock-timeout=3000s -parallelism=1000 -no-color terraform.tfplan
+    # - name: Terraform Apply
+    #   run: terraform apply -auto-approve -lock-timeout=3000s -parallelism=1000 -no-color terraform.tfplan
