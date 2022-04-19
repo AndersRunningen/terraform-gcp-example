@@ -35,6 +35,12 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }} # this is the output provider_name from the TF module
+        service_account: ${{ secrets.SA_EMAIL }} # this is a SA email configured using the TF module with access to YOUR-GCS-BUCKET
+
     - name: Setup tfnotify
       run: |
         sudo curl -fL -o tfnotify.tar.gz https://github.com/mercari/tfnotify/releases/download/v${{ env.tfnotify_version }}/tfnotify_linux_amd64.tar.gz
@@ -50,7 +56,7 @@ jobs:
     - name: Terraform Init
       run: terraform init -reconfigure -backend-config="bucket=${TERRAFORM_STATE_GCP_BUCKET}" #-backend-config="encryption_key=${GOOGLE_ENCRYPTION_KEY}"
       env:
-        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        GOOGLE_CREDENTIALS: ${{ steps.auth.outputs.access_token }}
         TERRAFORM_STATE_GCP_BUCKET: ${{ secrets.TERRAFORM_STATE_GCP_BUCKET }}
         #GOOGLE_ENCRYPTION_KEY: ${{ secrets.GOOGLE_ENCRYPTION_KEY }}
 
