@@ -109,6 +109,35 @@ terraform plan -var-file=env/${TERRAFORM_ENVIRONMENT}.tfvars
 terraform apply -var-file=env/${TERRAFORM_ENVIRONMENT}.tfvars
 ```
 
+
+## Setting up Identity Federation for GitHub Actions
+
+```bash
+gcloud iam workload-identity-pools create "ga-pool" \
+  --project="andersrunningen-test" \
+  --location="global" \
+  --display-name="Github actions pool"
+```
+
+```bash
+gcloud iam workload-identity-pools providers create-oidc "my-provider" \
+  --project="andersrunningen-test" \
+  --location="global" \
+  --workload-identity-pool="ga-pool" \
+  --display-name="GitHub provider" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.aud=assertion.aud" \
+  --issuer-uri="https://token.actions.githubusercontent.com"
+```
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding "terraform@andersrunningen-test.iam.gserviceaccount.com" \
+  --project="andersrunningen-test" \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/projects/325888718151/locations/global/workloadIdentityPools/ga-pool/attribute.repository/AndersRunningen/terraform-gcp-example"
+```
+
+`325888718151` can be found by `gcloud projects list`
+
 ## Kubernetes Credentials
 
 Run the following command in order to fetch the credentials for the new
