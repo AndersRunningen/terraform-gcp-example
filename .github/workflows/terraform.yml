@@ -1,0 +1,127 @@
+name: 'Terraform Workflow'
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches:
+    - main
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  id-token: write
+  contents: write    # This is required for actions/checkout@v3
+
+env:
+  terraform_version: 1.1.8
+  tfnotify_version: 0.7.4
+  GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+  TERRAFORM_STATE_GCP_BUCKET: ${{ secrets.TERRAFORM_STATE_GCP_BUCKET }}
+  #GOOGLE_ENCRYPTION_KEY: ${{ secrets.GOOGLE_ENCRYPTION_KEY }}
+
+jobs:
+  plan:
+    if: github.event_name == 'pull_request'
+
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup tfnotify
+      run: |
+        sudo curl -fL -o tfnotify.tar.gz https://github.com/mercari/tfnotify/releases/download/v${{ env.tfnotify_version }}/tfnotify_linux_amd64.tar.gz
+        sudo tar -C /usr/bin -xzf ./tfnotify.tar.gz
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: ${{ env.terraform_version }}
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init -reconfigure -backend-config="bucket=${TERRAFORM_STATE_GCP_BUCKET}" #-backend-config="encryption_key=${GOOGLE_ENCRYPTION_KEY}"
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        TERRAFORM_STATE_GCP_BUCKET: ${{ secrets.TERRAFORM_STATE_GCP_BUCKET }}
+        #GOOGLE_ENCRYPTION_KEY: ${{ secrets.GOOGLE_ENCRYPTION_KEY }}
+
+    # Validate that there are no errors
+    - name: Terraform Validate
+      run: terraform validate -no-color
+
+    # Checks that all Terraform configuration files adhere to a canonical format
+    - name: Terraform Format
+      run: terraform fmt -check
+
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      # https://sue445.hatenablog.com/entry/2021/01/07/004835
+      run: |
+        if [ -n "$PR_HEAD_SHA" ]; then
+          export GITHUB_SHA=$PR_HEAD_SHA
+        fi
+        terraform plan -no-color -lock-timeout=3000s | tfnotify --config tfnotify_github.yaml plan
+      env:
+        GITHUB_TOKEN: ${{ secrets.github_token }}
+        PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+    - name: Terraform Plan Status
+      if: steps.plan.outcome == 'failure'
+      run: exit 1
+
+# ##Apply job
+#   apply:
+#     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     # Checkout the repository to the GitHub Actions runner
+#     - name: Checkout
+#       uses: actions/checkout@v3
+
+#     - name: Setup tfnotify
+#       run: |
+#         sudo curl -fL -o tfnotify.tar.gz https://github.com/mercari/tfnotify/releases/download/v${{ env.tfnotify_version }}/tfnotify_linux_amd64.tar.gz
+#         sudo tar -C /usr/bin -xzf ./tfnotify.tar.gz
+
+#     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+#     - name: Setup Terraform
+#       uses: hashicorp/setup-terraform@v1
+#       with:
+#         terraform_version: ${{ env.terraform_version }}
+
+#     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+#     - name: Terraform Init
+#       run: terraform init -reconfigure -backend-config="bucket=${TERRAFORM_STATE_GCP_BUCKET}" -backend-config="encryption_key=${GOOGLE_ENCRYPTION_KEY}"
+#       env:
+#         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+#         TERRAFORM_STATE_GCP_BUCKET: ${{ secrets.TERRAFORM_STATE_GCP_BUCKET }}
+#         GOOGLE_ENCRYPTION_KEY: ${{ secrets.GOOGLE_ENCRYPTION_KEY }}
+
+#     # Validate that there are no errors
+#     - name: Terraform Validate
+#       run: terraform validate -no-color
+
+#     # Checks that all Terraform configuration files adhere to a canonical format
+#     - name: Terraform Format
+#       run: terraform fmt -check
+
+#     # https://sue445.hatenablog.com/entry/2021/01/07/004835
+#     # Generates an execution plan for Terraform
+#     - name: Terraform Plan
+#       run: terraform plan -no-color -lock-timeout=3000s -out=terraform.tfplan
+
+
+#     - name: Terraform Apply
+#       run: terraform apply -auto-approve -lock-timeout=3000s -parallelism=1000 -no-color terraform.tfplan
