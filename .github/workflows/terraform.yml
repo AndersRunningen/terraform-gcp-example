@@ -15,7 +15,7 @@ on:
 
 permissions:
   id-token: write
-  contents: write    # This is required for actions/checkout@v3
+  contents: write    # This is required for actions/checkout@v4
 
 env:
   terraform_version: 1.1.8
@@ -32,7 +32,7 @@ jobs:
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - id: 'auth'
       uses: 'google-github-actions/auth@v0'
@@ -92,7 +92,7 @@ jobs:
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - id: 'auth'
       uses: 'google-github-actions/auth@v0'
